@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">Test20_SQLite</string>
+    <string name="add">add</string>
+    <string name="search">search</string>
+    <string name="insert">insert</string>
+    <string name="update">update</string>
+    <string name="delete">delete</string>
+</resources>
