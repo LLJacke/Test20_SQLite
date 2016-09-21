@@ -5,4 +5,7 @@
     <string name="insert">insert</string>
     <string name="update">update</string>
     <string name="delete">delete</string>
+    <string name="insert_word">word</string>
+    <string name="insert_meaning">meaning</string>
+    <string name="insert_sample">sample</string>
 </resources>
