@@ -2,6 +2,8 @@ package com.lljackie.test20_sqlite;
 
 import android.content.ContentValues;
 import android.content.DialogInterface;
+import android.content.Intent;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
@@ -16,6 +18,7 @@ import android.widget.ListView;
 import android.widget.SimpleAdapter;
 import android.widget.TableLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -242,7 +245,6 @@ public class MainActivity extends AppCompatActivity {
 
                         //既可以使用Sql语句更新，也可以使用使用update方法更新
                         UpdateUseSql(strId, strNewWord, strNewMeaning, strNewSample);
-                        //  Update(strId, strNewWord, strNewMeaning, strNewSample);
                         setWordsListView(getAll());
                     }
                 })
@@ -255,12 +257,59 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .create()//创建对话框
                 .show();//显示对话框
+    }
 
+    private ArrayList<Map<String, String>> SearchUseSql(String strWordSearch) {
+        SQLiteDatabase db = mDbHelper.getReadableDatabase();
 
+        String sql="select * from words where word like ? order by word desc";
+        Cursor c=db.rawQuery(sql,new String[]{"%"+strWordSearch+"%"});
 
+        return ConvertCursor2List(c);
+    }
+
+    private ArrayList<Map<String, String>> ConvertCursor2List(Cursor c) {
+        return null;
     }
 
     private void SearchDialog() {
+        final TableLayout tableLayout = (TableLayout) getLayoutInflater().inflate(R.layout.searchterm, null);
+        new AlertDialog.Builder(this)
+                .setTitle("新增单词")//标题
+                .setView(tableLayout)//设置视图
+                //确定按钮及其动作
+                .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        String txtSearchWord=((EditText)tableLayout.findViewById(R.id.search)).getText().toString();
+
+                        ArrayList<Map<String, String>> items=null;
+                        //既可以使用Sql语句查询，也可以使用方法查询
+                        items=SearchUseSql(txtSearchWord);
+                        // items=Search(txtSearchWord);
+
+                        if(items.size()>0) {
+                            Bundle bundle=new Bundle();
+                            bundle.putSerializable("result",items);
+                            Intent intent=new Intent(MainActivity.this,SearchActivity.class);
+                            intent.putExtras(bundle);
+                            startActivity(intent);
+                        }else
+                            Toast.makeText(MainActivity.this,"没有找到",Toast.LENGTH_LONG).show();
+
+
+                    }
+                })
+                //取消按钮及其动作
+                .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                    }
+                })
+                .create()//创建对话框
+                .show();//显示对话框
+
 
     }
 
