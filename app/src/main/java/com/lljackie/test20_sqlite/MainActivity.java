@@ -224,7 +224,39 @@ public class MainActivity extends AppCompatActivity {
         db.execSQL(sql, new String[]{strWord, strMeaning, strSample,strId});
     }
 
-    private void UpdateDialog(String strId, String strWord, String strMeaning, String strSample) {
+    private void UpdateDialog(final String strId, String strWord, String strMeaning, String strSample) {
+        final TableLayout tableLayout = (TableLayout) getLayoutInflater().inflate(R.layout.insert, null);
+        ((EditText)tableLayout.findViewById(R.id.insert_word)).setText(strWord);
+        ((EditText)tableLayout.findViewById(R.id.insert_meaning)).setText(strMeaning);
+        ((EditText)tableLayout.findViewById(R.id.insert_sample)).setText(strSample);
+        new AlertDialog.Builder(this)
+                .setTitle("修改单词")//标题
+                .setView(tableLayout)//设置视图
+                //确定按钮及其动作
+                .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        String strNewWord = ((EditText) tableLayout.findViewById(R.id.insert_word)).getText().toString();
+                        String strNewMeaning = ((EditText) tableLayout.findViewById(R.id.insert_meaning)).getText().toString();
+                        String strNewSample = ((EditText) tableLayout.findViewById(R.id.insert_sample)).getText().toString();
+
+                        //既可以使用Sql语句更新，也可以使用使用update方法更新
+                        UpdateUseSql(strId, strNewWord, strNewMeaning, strNewSample);
+                        //  Update(strId, strNewWord, strNewMeaning, strNewSample);
+                        setWordsListView(getAll());
+                    }
+                })
+                //取消按钮及其动作
+                .setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+
+                    }
+                })
+                .create()//创建对话框
+                .show();//显示对话框
+
+
 
     }
 
