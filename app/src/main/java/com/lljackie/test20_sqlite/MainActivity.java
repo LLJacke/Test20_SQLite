@@ -20,7 +20,10 @@ import android.widget.TableLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.lljackie.test20_sqlite.Words.Word;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 public class MainActivity extends AppCompatActivity {
@@ -123,8 +126,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void setWordsListView(ArrayList<Map<String, String>> items) {
         SimpleAdapter adapter = new SimpleAdapter(this, items, R.layout.item,
-                new String[]{Words.Word._ID, Words.Word.COLUMN_NAME_WORD,
-                        Words.Word.COLUMN_NAME_MEANING, Words.Word.COLUMN_NAME_SAMPLE},
+                new String[]{Word._ID, Word.COLUMN_NAME_WORD,
+                        Word.COLUMN_NAME_MEANING, Word.COLUMN_NAME_SAMPLE},
                 new int[]{R.id.textId, R.id.textViewWord, R.id.textViewMeaning, R.id.textViewSample});
 
         ListView list = (ListView) findViewById(R.id.lv_words);
@@ -133,9 +136,45 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private ArrayList<Map<String, String>> getAll() {
-        return null;
+        SQLiteDatabase db = mDbHelper.getReadableDatabase();
+
+        String[] projection = {
+                Word._ID,
+                Word.COLUMN_NAME_WORD,
+                Word.COLUMN_NAME_MEANING,
+                Word.COLUMN_NAME_SAMPLE
+        };
+
+        //排序
+        String sortOrder =
+                Word.COLUMN_NAME_WORD + " DESC";
+
+
+        Cursor c = db.query(
+                Word.TABLE_NAME,                          // The table to query
+                projection,                               // The columns to return
+                null,                                     // The columns for the WHERE clause
+                null,                                     // The values for the WHERE clause
+                null,                                     // don't group the rows
+                null,                                     // don't filter by row groups
+                sortOrder                                 // The sort order
+        );
+
+        return ConvertCursor2List(c);
     }
 
+
+    private ArrayList<Map<String, String>> ConvertCursor2List(Cursor cursor) {
+        ArrayList<Map<String, String>> result = new ArrayList<>();
+        while (cursor.moveToNext()) {
+            Map<String, String> map = new HashMap<>();
+            map.put(Word._ID, String.valueOf(cursor.getInt(0)));
+            map.put(Word.COLUMN_NAME_WORD, cursor.getString(1));
+            map.put(Word.COLUMN_NAME_MEANING, cursor.getString(2));
+            map.put(Word.COLUMN_NAME_SAMPLE, cursor.getString(3));
+            result.add(map);
+        }
+        return result;    }
 
     //增加单词
     private void Insert(String strWord, String strMeaning, String strSample) {
@@ -143,44 +182,40 @@ public class MainActivity extends AppCompatActivity {
         SQLiteDatabase db = mDbHelper.getWritableDatabase();
 
         ContentValues values = new ContentValues();
-        values.put(Words.Word.COLUMN_NAME_WORD, strWord);
-        values.put(Words.Word.COLUMN_NAME_MEANING, strMeaning);
-        values.put(Words.Word.COLUMN_NAME_SAMPLE, strSample);
+        values.put(Word.COLUMN_NAME_WORD, strWord);
+        values.put(Word.COLUMN_NAME_MEANING, strMeaning);
+        values.put(Word.COLUMN_NAME_SAMPLE, strSample);
 
-        long newRowId;
-        newRowId = db.insert(
-                Words.Word.TABLE_NAME,
+        db.insert(
+                Word.TABLE_NAME,
                 null,
                 values);
     }
+
 
     private void InsertDialog() {
         final TableLayout tableLayout = (TableLayout) getLayoutInflater()
                 .inflate(R.layout.insert, null);
         new AlertDialog.Builder(this)
-                .setTitle("新增单词")//标题
-                .setView(tableLayout)//设置视图
-                //确定按钮及其动作
+                .setTitle("新增单词")
+                .setView(tableLayout)
                 .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        String strWord=((EditText)tableLayout.findViewById(R.id.insert_word))
+                        String strWord = ((EditText) tableLayout.findViewById(R.id.insert_word))
                                 .getText().toString();
-                        String strMeaning=((EditText)tableLayout.findViewById(R.id.insert_meaning))
+                        String strMeaning = ((EditText) tableLayout.findViewById(R.id.insert_meaning))
                                 .getText().toString();
-                        String strSample=((EditText)tableLayout.findViewById(R.id.insert_sample))
+                        String strSample = ((EditText) tableLayout.findViewById(R.id.insert_sample))
                                 .getText().toString();
 
-                        //既可以使用Sql语句插入，也可以使用使用insert方法插入
-                        // InsertUserSql(strWord, strMeaning, strSample);
                         Insert(strWord, strMeaning, strSample);
 
-                        ArrayList<Map<String, String>> items=getAll();
+                        ArrayList<Map<String, String>> items = getAll();
                         setWordsListView(items);
 
                     }
                 })
-                //取消按钮及其动作
                 .setNegativeButton("取消", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
@@ -192,26 +227,25 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-
     //删除单词
     private void Delete(String strId) {
         SQLiteDatabase db = mDbHelper.getReadableDatabase();
-        String selection = Words.Word._ID + " = ?";
+        String selection = Word._ID + " = ?";
 
         String[] selectionArgs = {strId};
 
-        db.delete(Words.Word.TABLE_NAME, selection, selectionArgs);
+        db.delete(Word.TABLE_NAME, selection, selectionArgs);
     }
 
     private void DeleteDialog(final String strId) {
         new AlertDialog.Builder(this).setTitle("删除单词").setMessage("是否真的删除单词?")
                 .setPositiveButton("确定", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialogInterface, int i) {
-                Delete(strId);
-                setWordsListView(getAll());
-            }
-        }).setNegativeButton("取消", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialogInterface, int i) {
+                        Delete(strId);
+                        setWordsListView(getAll());
+                    }
+                }).setNegativeButton("取消", new DialogInterface.OnClickListener() {
             @Override
             public void onClick(DialogInterface dialogInterface, int i) {
 
@@ -221,21 +255,20 @@ public class MainActivity extends AppCompatActivity {
     }
 
     //使用Sql语句更新单词
-    private void UpdateUseSql(String strId,String strWord, String strMeaning, String strSample) {
+    private void UpdateUseSql(String strId, String strWord, String strMeaning, String strSample) {
         SQLiteDatabase db = mDbHelper.getReadableDatabase();
-        String sql="update words set word=?,meaning=?,sample=? where _id=?";
-        db.execSQL(sql, new String[]{strWord, strMeaning, strSample,strId});
+        String sql = "update words set word=?,meaning=?,sample=? where _id=?";
+        db.execSQL(sql, new String[]{strWord, strMeaning, strSample, strId});
     }
 
     private void UpdateDialog(final String strId, String strWord, String strMeaning, String strSample) {
         final TableLayout tableLayout = (TableLayout) getLayoutInflater().inflate(R.layout.insert, null);
-        ((EditText)tableLayout.findViewById(R.id.insert_word)).setText(strWord);
-        ((EditText)tableLayout.findViewById(R.id.insert_meaning)).setText(strMeaning);
-        ((EditText)tableLayout.findViewById(R.id.insert_sample)).setText(strSample);
+        ((EditText) tableLayout.findViewById(R.id.insert_word)).setText(strWord);
+        ((EditText) tableLayout.findViewById(R.id.insert_meaning)).setText(strMeaning);
+        ((EditText) tableLayout.findViewById(R.id.insert_sample)).setText(strSample);
         new AlertDialog.Builder(this)
-                .setTitle("修改单词")//标题
-                .setView(tableLayout)//设置视图
-                //确定按钮及其动作
+                .setTitle("修改单词")
+                .setView(tableLayout)
                 .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
@@ -243,72 +276,63 @@ public class MainActivity extends AppCompatActivity {
                         String strNewMeaning = ((EditText) tableLayout.findViewById(R.id.insert_meaning)).getText().toString();
                         String strNewSample = ((EditText) tableLayout.findViewById(R.id.insert_sample)).getText().toString();
 
-                        //既可以使用Sql语句更新，也可以使用使用update方法更新
                         UpdateUseSql(strId, strNewWord, strNewMeaning, strNewSample);
                         setWordsListView(getAll());
                     }
                 })
-                //取消按钮及其动作
                 .setNegativeButton("取消", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
 
                     }
                 })
-                .create()//创建对话框
-                .show();//显示对话框
+                .create()
+                .show();
     }
 
+    //查找单词
     private ArrayList<Map<String, String>> SearchUseSql(String strWordSearch) {
         SQLiteDatabase db = mDbHelper.getReadableDatabase();
 
-        String sql="select * from words where word like ? order by word desc";
-        Cursor c=db.rawQuery(sql,new String[]{"%"+strWordSearch+"%"});
+        String sql = "select * from words where word like ? order by word desc";
+        Cursor c = db.rawQuery(sql, new String[]{"%" + strWordSearch + "%"});
 
         return ConvertCursor2List(c);
-    }
-
-    private ArrayList<Map<String, String>> ConvertCursor2List(Cursor c) {
-        return null;
     }
 
     private void SearchDialog() {
         final TableLayout tableLayout = (TableLayout) getLayoutInflater().inflate(R.layout.searchterm, null);
         new AlertDialog.Builder(this)
-                .setTitle("新增单词")//标题
-                .setView(tableLayout)//设置视图
-                //确定按钮及其动作
+                .setTitle("查找单词")
+                .setView(tableLayout)
                 .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
-                        String txtSearchWord=((EditText)tableLayout.findViewById(R.id.search)).getText().toString();
+                        String txtSearchWord = ((EditText) tableLayout.findViewById(R.id.search)).getText().toString();
 
-                        ArrayList<Map<String, String>> items=null;
-                        //既可以使用Sql语句查询，也可以使用方法查询
-                        items=SearchUseSql(txtSearchWord);
-                        // items=Search(txtSearchWord);
+                        ArrayList<Map<String, String>> items = null;
+                        items = SearchUseSql(txtSearchWord);
 
-                        if(items.size()>0) {
-                            Bundle bundle=new Bundle();
-                            bundle.putSerializable("result",items);
-                            Intent intent=new Intent(MainActivity.this,SearchActivity.class);
+                        if (items.size() > 0) {
+                            Bundle bundle = new Bundle();
+                            bundle.putSerializable("result", items);
+                            Intent intent = new Intent(MainActivity.this, SearchActivity.class);
                             intent.putExtras(bundle);
                             startActivity(intent);
-                        }else
-                            Toast.makeText(MainActivity.this,"没有找到",Toast.LENGTH_LONG).show();
+                        } else
+                            Toast.makeText(MainActivity.this, "没有找到", Toast.LENGTH_LONG).show();
 
 
                     }
                 })
-                //取消按钮及其动作
                 .setNegativeButton("取消", new DialogInterface.OnClickListener() {
                     @Override
                     public void onClick(DialogInterface dialogInterface, int i) {
 
                     }
                 })
-                .create()//创建对话框
-                .show();//显示对话框
+                .create()
+                .show();
 
 
     }
